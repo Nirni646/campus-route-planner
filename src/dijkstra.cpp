@@ -3,7 +3,8 @@
 
 #include <queue>
 #include <limits>
-#include <algorithm>
+#include <functional>
+#include <algorithm>   // for std::reverse
 
 namespace {
     std::vector<int> reconstructPath(int src, int dest, const std::vector<int>& parent) {
@@ -12,8 +13,10 @@ namespace {
         if (src < 0 || src >= (int)parent.size()) return path;
 
         int cur = dest;
-        if (parent[cur] == -1 && cur != src) return {};
-
+        if (parent[cur] == -1 && cur != src) {
+            // No path
+            return {};
+        }
         while (cur != -1) {
             path.push_back(cur);
             if (cur == src) break;
@@ -38,25 +41,28 @@ std::vector<int> dijkstraShortestPath(
     std::vector<int> parent(n, -1);
     std::vector<bool> visited(n, false);
 
-    using P = std::pair<double, int>;
+    using P = std::pair<double, int>; // (dist, node)
     std::priority_queue<P, std::vector<P>, std::greater<P>> pq;
 
     dist[src] = 0.0;
     pq.push(P(0.0, src));
 
     while (!pq.empty()) {
-        auto [d, u] = pq.top();
+        P top = pq.top();
         pq.pop();
+        double d = top.first;
+        int u = top.second;
 
         if (visited[u]) continue;
         visited[u] = true;
 
         if (u == dest) break;
 
-        for (const Edge& e : g.neighbors(u)) {
+        const std::vector<Edge>& neigh = g.neighbors(u);
+        for (size_t i = 0; i < neigh.size(); ++i) {
+            const Edge& e = neigh[i];
             int v = e.to;
             double w = e.weight;
-
             if (dist[u] + w < dist[v]) {
                 dist[v] = dist[u] + w;
                 parent[v] = u;
@@ -65,72 +71,14 @@ std::vector<int> dijkstraShortestPath(
         }
     }
 
-    if (!std::isfinite(dist[dest])) return {};
+    // Check if unreachable (still infinity)
+    if (dist[dest] == std::numeric_limits<double>::infinity()) {
+        return {};
+    }
 
     totalWeight = dist[dest];
     return reconstructPath(src, dest, parent);
 }
-
-std::vector<int> bfsShortestPath(
-    const Graph& g,
-    int src,
-    int dest
-) {
-    int n = g.numVertices();
-    std::vector<bool> visited(n, false);
-    std::vector<int> parent(n, -1);
-
-    std::queue<int> q;
-    visited[src] = true;
-    q.push(src);
-
-    while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-
-        if (u == dest) break;
-
-        for (const Edge& e : g.neighbors(u)) {
-            int v = e.to;
-            if (!visited[v]) {
-                visited[v] = true;
-                parent[v] = u;
-                q.push(v);
-            }
-        }
-    }
-
-    return reconstructPath(src, dest, parent);
-}
-
-bool isConnected(const Graph& g) {
-    int n = g.numVertices();
-    if (n == 0) return true;
-
-    std::vector<bool> visited(n, false);
-    std::queue<int> q;
-
-    visited[0] = true;
-    q.push(0);
-    int count = 1;
-
-    while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-
-        for (const Edge& e : g.neighbors(u)) {
-            int v = e.to;
-            if (!visited[v]) {
-                visited[v] = true;
-                q.push(v);
-                count++;
-            }
-        }
-    }
-
-    return count == n;
-}
-// src/dijkstra.cpp (Part 2: Blocked Road Feature Extension)
 
 std::vector<int> dijkstraAvoidingEdge(
     const Graph& g,
@@ -158,19 +106,22 @@ std::vector<int> dijkstraAvoidingEdge(
     };
 
     while (!pq.empty()) {
-        auto [d, u] = pq.top();
+        P top = pq.top();
         pq.pop();
+        double d = top.first;
+        int u = top.second;
 
         if (visited[u]) continue;
         visited[u] = true;
 
         if (u == dest) break;
 
-        for (const Edge& e : g.neighbors(u)) {
+        const std::vector<Edge>& neigh = g.neighbors(u);
+        for (size_t i = 0; i < neigh.size(); ++i) {
+            const Edge& e = neigh[i];
             int v = e.to;
-            if (isBlocked(u, v)) continue;
+            if (isBlocked(u, v)) continue; // skip blocked road
             double w = e.weight;
-
             if (dist[u] + w < dist[v]) {
                 dist[v] = dist[u] + w;
                 parent[v] = u;
@@ -179,8 +130,74 @@ std::vector<int> dijkstraAvoidingEdge(
         }
     }
 
-    if (!std::isfinite(dist[dest])) return {};
+    if (dist[dest] == std::numeric_limits<double>::infinity()) {
+        return {};
+    }
 
     totalWeight = dist[dest];
     return reconstructPath(src, dest, parent);
+}
+
+std::vector<int> bfsShortestPath(
+    const Graph& g,
+    int src,
+    int dest
+) {
+    int n = g.numVertices();
+    std::vector<bool> visited(n, false);
+    std::vector<int> parent(n, -1);
+
+    std::queue<int> q;
+    visited[src] = true;
+    q.push(src);
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        if (u == dest) break;
+
+        const std::vector<Edge>& neigh = g.neighbors(u);
+        for (size_t i = 0; i < neigh.size(); ++i) {
+            const Edge& e = neigh[i];
+            int v = e.to;
+            if (!visited[v]) {
+                visited[v] = true;
+                parent[v] = u;
+                q.push(v);
+            }
+        }
+    }
+
+    return reconstructPath(src, dest, parent);
+}
+
+bool isConnected(const Graph& g) {
+    int n = g.numVertices();
+    if (n == 0) return true;
+
+    std::vector<bool> visited(n, false);
+    std::queue<int> q;
+
+    visited[0] = true;
+    q.push(0);
+    int count = 1;
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        const std::vector<Edge>& neigh = g.neighbors(u);
+        for (size_t i = 0; i < neigh.size(); ++i) {
+            const Edge& e = neigh[i];
+            int v = e.to;
+            if (!visited[v]) {
+                visited[v] = true;
+                q.push(v);
+                ++count;
+            }
+        }
+    }
+
+    return count == n;
 }
