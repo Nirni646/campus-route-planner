@@ -1,6 +1,6 @@
-🚶‍♂️ IIT Jodhpur Campus Route Planner
+🚶‍♂️ Campus Route Planner
 
-A C++ project that finds the shortest walking paths between locations at IIT Jodhpur using graph algorithms like Dijkstra's and BFS.
+A C++ project that finds the shortest walking paths between locations at Campus using graph algorithms like Dijkstra's and BFS.
 
 📂 Project Structure & File Workflow
 
