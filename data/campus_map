@@ -1,0 +1,25 @@
+10 13
+Hostel_A
+Hostel_B
+Mess
+Library
+LectureHall_1
+LectureHall_2
+Main_Gate
+Sports_Complex
+Admin_Block
+Parking
+
+Hostel_A Hostel_B 150
+Hostel_A Mess 200
+Hostel_B Mess 120
+Mess Library 300
+Library LectureHall_1 180
+LectureHall_1 LectureHall_2 100
+LectureHall_2 Admin_Block 160
+Admin_Block Parking 140
+Parking Main_Gate 350
+Main_Gate Hostel_A 600
+Library Admin_Block 250
+Hostel_B Parking 700
+Library Main_Gate 550
