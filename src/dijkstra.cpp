@@ -130,3 +130,57 @@ bool isConnected(const Graph& g) {
 
     return count == n;
 }
+// src/dijkstra.cpp (Part 2: Blocked Road Feature Extension)
+
+std::vector<int> dijkstraAvoidingEdge(
+    const Graph& g,
+    int src,
+    int dest,
+    int avoidU,
+    int avoidV,
+    double& totalWeight
+) {
+    int n = g.numVertices();
+    totalWeight = 0.0;
+
+    std::vector<double> dist(n, std::numeric_limits<double>::infinity());
+    std::vector<int> parent(n, -1);
+    std::vector<bool> visited(n, false);
+
+    using P = std::pair<double, int>;
+    std::priority_queue<P, std::vector<P>, std::greater<P>> pq;
+
+    dist[src] = 0.0;
+    pq.push(P(0.0, src));
+
+    auto isBlocked = [avoidU, avoidV](int u, int v) {
+        return (u == avoidU && v == avoidV) || (u == avoidV && v == avoidU);
+    };
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+
+        if (visited[u]) continue;
+        visited[u] = true;
+
+        if (u == dest) break;
+
+        for (const Edge& e : g.neighbors(u)) {
+            int v = e.to;
+            if (isBlocked(u, v)) continue;
+            double w = e.weight;
+
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                parent[v] = u;
+                pq.push(P(dist[v], v));
+            }
+        }
+    }
+
+    if (!std::isfinite(dist[dest])) return {};
+
+    totalWeight = dist[dest];
+    return reconstructPath(src, dest, parent);
+}
